@@ -14,4 +14,5 @@ app.get('/:token', (req, res) => {
 	res.send('Hello World!');
 })
 
-app.listen(config.port, () => console.log(`bot listening on port ${config.port}!`))
+const port = process.env.PORT || config.port
+app.listen(port, () => console.log(`bot listening on port ${port}!`))
