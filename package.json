@@ -4,12 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "serve": "nodemon ./index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.16.2",
-    "mongodb": "^2.2.33"
+    "mongodb": "^2.2.33",
+    "node-telegram-bot-api": "^0.29.0",
+    "superagent": "^3.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.1"
   }
 }
