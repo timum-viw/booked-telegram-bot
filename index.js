@@ -24,11 +24,11 @@ const bot = new TelegramBot(telegram_api_key, options)
 
 const commands = {
 	async start(msg, params) {
-		const url = config.booked.url + 'Authentication/Autheticate'
+		const url = config.booked.url + 'Authentication/Authenticate'
 		console.log(url)
 		try {
 			bot.sendMessage(msg.chat.id, 'I\'m looking this up for you. Please wait a second.')
-			const res = await superagent.post(url).send({code: params})
+			const res = await superagent.post(url).send({grant_type: 'authorization_code', code: params})
 			mongodb.collection('connections').update(
 				{ chat_id: msg.from.id },
 				{ chat_id: msg.from.id, access_token: res.body.access_token },
