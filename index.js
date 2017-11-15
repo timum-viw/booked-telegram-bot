@@ -1,7 +1,7 @@
-const config = require('./config')
 const superagent = require('superagent');
 const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
+const config = require('./config')
 
 var MongoClient = require('mongodb').MongoClient
 var mongodb;
