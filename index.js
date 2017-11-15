@@ -6,8 +6,7 @@ const config = require('./config')
 var MongoClient = require('mongodb').MongoClient
 var mongodb;
 
-const mongo_uri = process.env.MONGODB_URI || config.mongo_uri
-MongoClient.connect(mongo_uri, function (err, db) {
+MongoClient.connect(config.mongo_uri, function (err, db) {
 	if (err) throw err
 
 	mongodb = db;

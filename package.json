@@ -7,6 +7,9 @@
     "start": "node index.js",
     "serve": "nodemon ./index.js"
   },
+  "engines": {
+    "node": "9.1.0"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
