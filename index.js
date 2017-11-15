@@ -47,7 +47,7 @@ const commands = {
 		try {
 			bot.sendMessage(msg.chat.id, 'I\'m signing you up. Please wait a second...')
 
-			const res = await superagent.post(url).send({email: params})
+			const res = await superagent.post(url).send({user_email: params})
 			bot.sendMessage(msg.chat.id, 'Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
 		} catch (error) {
 			bot.sendMessage(msg.chat.id, 'Please send me a valid charite.de email address with this command.')
