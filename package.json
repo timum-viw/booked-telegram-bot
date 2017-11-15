@@ -16,6 +16,7 @@
     "superagent": "^3.8.1"
   },
   "devDependencies": {
+    "dotenv": "^4.0.0",
     "nodemon": "^1.12.1"
   }
 }

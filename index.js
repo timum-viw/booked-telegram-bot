@@ -1,6 +1,7 @@
 const config = require('./config')
 const superagent = require('superagent');
 const TelegramBot = require('node-telegram-bot-api');
+require('dotenv').config();
 
 var MongoClient = require('mongodb').MongoClient
 var mongodb;
@@ -17,15 +18,17 @@ const options = {
 		port: process.env.PORT || config.port
 	}
 }
-const bot = new TelegramBot(config.telegram.api_key, options);
+
+const telegram_api_key = process.env.TELEGRAM_API_KEY
+const bot = new TelegramBot(telegram_api_key, options)
 
 const commands = {
 	async start(msg, params) {
-		const url = config.booked.url + 'Telegram/authorize?token=' + params
+		const url = config.booked.url + 'Authentication/Autheticate'
 		console.log(url)
 		try {
 			bot.sendMessage(msg.chat.id, 'I\'m looking this up for you. Please wait a second.')
-			const res = await superagent.post(url)
+			const res = await superagent.post(url).send({code: params})
 			mongodb.collection('connections').update(
 				{ chat_id: msg.from.id },
 				{ chat_id: msg.from.id, access_token: res.body.access_token },
@@ -40,18 +43,11 @@ const commands = {
 	},
 
 	async signup(msg, params) {
-		const url = config.booked.url + 'Telegram/signup?email=' + params
+		const url = config.booked.url + 'Telegram/signup'
 		try {
 			bot.sendMessage(msg.chat.id, 'I\'m signing you up. Please wait a second...')
 
-			const res = await superagent.post(url)
-			mongodb.collection('connections').update(
-				{ chat_id: msg.from.id },
-				{ chat_id: msg.from.id, access_token: null },
-				{
-					upsert: true,
-				},
-			);
+			const res = await superagent.post(url).send({email: params})
 			bot.sendMessage(msg.chat.id, 'Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
 		} catch (error) {
 			bot.sendMessage(msg.chat.id, 'Please send me a valid charite.de email address with this command.')
