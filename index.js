@@ -15,6 +15,7 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 
 	const telegram_api_key = process.env.TELEGRAM_API_KEY
 	const bot = new TelegramBot(telegram_api_key, options)
+	bot.setWebHook(`${config.app_url}/bot${telegram_api_key}`);
 
 	let commands = require('./commands')(db, bot, config.booked.url)
 	let queries = require('./queries')(db, bot, config.booked.url)

@@ -1,4 +1,5 @@
 const config = {
+	app_url: process.env.APP_URL,
 	port: 5432,
 	mongo_uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/booked-telegram-bot',
 	booked: {
