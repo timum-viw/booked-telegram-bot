@@ -22,52 +22,60 @@ const telegram_api_key = process.env.TELEGRAM_API_KEY
 const bot = new TelegramBot(telegram_api_key, options)
 
 const commands = {
-	async start(msg, params) {
+	start(msg, params) {
 		const url = config.booked.url + 'Authentication/Authenticate'
-		console.log(url)
-		try {
-			bot.sendMessage(msg.chat.id, 'I\'m looking this up for you. Please wait a second.')
-			const res = await superagent.post(url).send({grant_type: 'authorization_code', code: params})
-			mongodb.collection('connections').update(
-				{ chat_id: msg.from.id },
-				{ chat_id: msg.from.id, access_token: res.body.access_token },
-				{
-					upsert: true,
-				},
-			);
-			bot.sendMessage(msg.chat.id, 'Great! You have been successfully signed up to my booking services. Feel free to ask me about available rooms to /book.')
-		} catch (error) {
-			bot.sendMessage(msg.chat.id, 'Please tell me your charite.de email address to /signup for my booking services.')
-		}
+		bot.sendChatAction(msg.chat.id, 'typing')
+		superagent.post(url)
+			.send({grant_type: 'authorization_code', code: params})
+			.end((err, res) => {
+				if(err) {
+					bot.sendMessage(msg.chat.id, 'Please tell me your charite.de email address to /signup for my booking services.')
+					return
+				}
+
+				mongodb.collection('connections').update(
+					{ chat_id: msg.from.id },
+					{ chat_id: msg.from.id, access_token: res.body.access_token },
+					{
+						upsert: true,
+					},
+				);
+				bot.sendMessage(msg.chat.id, 'Great! You have been successfully signed up to my booking services. Feel free to ask me about available rooms to /book.')
+			})
 	},
 
-	async signup(msg, params) {
+	signup(msg, params) {
 		const url = config.booked.url + 'Telegram/signup'
-		try {
-			bot.sendMessage(msg.chat.id, 'I\'m signing you up. Please wait a second...')
+		bot.sendChatAction(msg.chat.id, 'typing')
 
-			const res = await superagent.post(url).send({user_email: params})
-			bot.sendMessage(msg.chat.id, 'Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
-		} catch (error) {
-			bot.sendMessage(msg.chat.id, 'Please send me a valid charite.de email address with this command.')
-		}
+		superagent.post(url)
+			.send({user_email: params})
+			.end((err, res) => {
+				if(err) bot.sendMessage(msg.chat.id, 'Please send me a valid charite.de email address with this command.')
+				else bot.sendMessage(msg.chat.id, 'Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
+			})
 	},
 
-	async bookings(msg, params) {
-		let user = mongodb.collection('connections').findOne({ chat_id: msg.from.id });
-		if(!user) {
-			bot.sendMessage(msg.chat.id, 'You have to be signed up to use my services. Please use /signup _your.email.address@charite.de_ to sign up with your email.', {parse_mode: 'Markdown'})
-			return
-		}
-		const url = config.booked.url + 'Resources/Status'
-		try {
-			bot.sendMessage(msg.chat.id, 'I\'m looking this you up. Please wait a second...')
+	bookings(msg, params) {
+		mongodb.collection('connections').findOne({ chat_id: msg.from.id }, (err, user) => {
 
-			const res = await superagent.get(url)
-			bot.sendMessage(msg.chat.id, JSON.stringify(res.body))
-		} catch (error) {
-			bot.sendMessage(msg.chat.id, 'Something went wrong.. ' + error)
-		}
+			function notAuthorized() {
+				bot.sendMessage(msg.chat.id, 'You have to be signed up to use my services. Please use /signup _your.email.address@charite.de_ to sign up with your email.', {parse_mode: 'Markdown'})
+			}
+
+			console.log(user)
+			if(!user) return notAuthorized()
+			const url = config.booked.url + 'Reservations/'
+			bot.sendChatAction(msg.chat.id, 'typing')
+
+			superagent
+				.get(url)
+				.set('X-Authorization', `Bearer ${user.access_token}`)
+				.end((err, res) => {
+					if(err) bot.sendMessage(msg.chat.id, 'Something went wrong.. ' + err)
+					else bot.sendMessage(msg.chat.id, JSON.stringify(res.body.reservations))
+				})
+		})
 	}
 }
 
