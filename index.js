@@ -17,24 +17,39 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 	const bot = new TelegramBot(telegram_api_key, options)
 
 	let commands = require('./commands')(db, bot, config.booked.url)
+	let queries = require('./queries')(db, bot, config.booked.url)
 
 	function processCommand(msg, entity) {
 		let cmd = msg.text.substr(entity.offset + 1, entity.length - 1)
 		let params = msg.text.substr(entity.offset + entity.length + 1)
 		let thread = commands.newThread(msg, params)
-		if(commands[cmd]) {
+		try {
 			commands[cmd](thread)
+		} catch (error) {
+			console.error(error)
+			thread.sendMessage(`I didn't quite get that. Could you rephrase?`)
 		}
 	}
 
-	bot.on('text', function onMessage(msg) {
-		commands.msg = msg
+	bot.on('text', (msg) => {
 		if(msg.entities) {
 			msg.entities
 				.filter((entity) => entity.type === 'bot_command')
 				.map((entity) => processCommand(msg, entity))
 		}
 	});
+
+	bot.on('callback_query', (cbquery) => {
+		let query, params
+		[query, params] = cbquery.data.split('.')
+		let thread = commands.newThread(cbquery, params)
+		try {
+			queries[query](thread)
+		} catch (error) {
+			console.error(error)
+			thread.sendMessage(`Somethings wrong with that button..?`)
+		}
+	})
 
 	bot.on('webhook_error', (error) => {
 		//bot.sendMessage(msg.chat.id, 'Hööö?');

@@ -37,38 +37,35 @@ class Commands {
 	}
 
 	bookings(thread) {
-		thread.getUser().then((user) => {
-			const url = this.booked_uri + 'Reservations/?userId=' + user.userId
-			thread.sendTyping()
-
-			superagent
-				.get(url)
-				.set('X-Authorization', `Bearer ${user.access_token}`)
-				.end((err, res) => {
-					if(err) return thread.notAuthorized()
+		thread.sendTyping()
+		thread.authorizedGet((user) => this.booked_uri + 'Reservations/?userId=' + user.userId)
+				.then((res) => {
+					if(res.body.reservations.length === 0) return thread.sendMessage('No bookings found. Do you want to see /available rooms?')
 					res.body.reservations.map((reservation) => {
-						let msg = `*room*: ${reservation.resourceName}\n`
-						let date = new Date(Date.parse(reservation.startDate))
-						msg += '*date*: ' + date.toLocaleDateString()
-						thread.sendMessage(JSON.stringify(msg))
+						let startDate = new Date(Date.parse(reservation.startDate))
+						let endDate = new Date(Date.parse(reservation.endDate))
+						let msg = `*room:* ${reservation.resourceName}
+*date:* ${startDate.toDateString()}
+*time:* ${startDate.toLocaleTimeString()} - ${endDate.toTimeString()}`
+						thread.sendMessage(msg, {reply_markup: {
+							inline_keyboard: [[{text: 'cancel', callback_data: `cancel.${reservation.referenceNumber}`}]]
+						}})
 					})
-				})
-		}, (err) => thread.notAuthorized())
+				}, (err) => thread.notAuthorized())
 	}
 
 	me(thread) {
-		thread.getUser().then((user) => {
-			const url = this.booked_uri + 'Users/' + user.userId
-			thread.sendTyping()
+		thread.sendTyping()
+		thread.authorizedGet((user) => this.booked_uri + 'Users/' + user.userId)
+			.then((res) => thread.sendMessage(`You are signed up as ${res.body.firstName} ${res.body.lastName}. I have the email address ${res.body.emailAddress}.`),
+			(err) => thread.notAuthorized())
+	}
 
-			superagent
-				.get(url)
-				.set('X-Authorization', `Bearer ${user.access_token}`)
-				.end((err, res) => {
-					if(err) thread.sendMessage('Something went wrong.. ' + err)
-					else thread.sendMessage(JSON.stringify(res.body))
-				})
-		}, (err) => thread.notAuthorized())
+	available(thread) {
+		thread.sendTyping()
+		thread.authorizedGet(() => this.booked_uri + 'Resources/Availability')
+				.then((res) => thread.sendMessage(JSON.stringify(res.body.resources)),
+				(err) => thread.notAuthorized())
 	}
 
 	newThread(msg, params) {

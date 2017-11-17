@@ -1,3 +1,5 @@
+const superagent = require('superagent')
+
 class Thread {
 	constructor(msg, params, db, bot) {
 		this.msg = msg
@@ -6,12 +8,13 @@ class Thread {
 		this.bot = bot
 	}
 
-	sendMessage(msg) {
-		this.bot.sendMessage(this.msg.chat.id, msg, {parse_mode: 'Markdown'})
+	sendMessage(msg, options) {
+		options = { parse_mode: 'Markdown', ...options }
+		this.bot.sendMessage(this.msg.from.id, msg, options)
 	}
 
 	sendTyping() {
-		this.bot.sendChatAction(this.msg.chat.id, 'typing')
+		this.bot.sendChatAction(this.msg.from.id, 'typing')
 	}
 
 	getUser() {
@@ -35,6 +38,30 @@ class Thread {
 
 	notAuthorized(err) {
 		this.sendMessage('You have to be signed up to use my services. Please use /signup _your.email.address@charite.de_ to sign up with your email.' + err)
+	}
+
+	authorizedGet(url) {
+		return this.getUser().then((user) => {
+			return superagent
+				.get(url(user))
+				.set('X-Authorization', `Bearer ${user.access_token}`)
+		})
+	}
+
+	authorizedPost(url) {
+		return this.getUser().then((user) => {
+			return superagent
+				.post(url(user))
+				.set('X-Authorization', `Bearer ${user.access_token}`)
+		})
+	}
+
+	authorizedDelete(url) {
+		return this.getUser().then((user) => {
+			return superagent
+				.delete(url(user))
+				.set('X-Authorization', `Bearer ${user.access_token}`)
+		})
 	}
 }
 
