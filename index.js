@@ -16,17 +16,19 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 	const telegram_api_key = process.env.TELEGRAM_API_KEY
 	const bot = new TelegramBot(telegram_api_key, options)
 
-	const commands = require('./commands')(db, bot, config.booked.url)
+	let commands = require('./commands')(db, bot, config.booked.url)
 
 	function processCommand(msg, entity) {
 		let cmd = msg.text.substr(entity.offset + 1, entity.length - 1)
-		let params = msg.text.substr(entity.offset + entity.length + 1);
+		let params = msg.text.substr(entity.offset + entity.length + 1)
+		let thread = commands.newThread(msg, params)
 		if(commands[cmd]) {
-			commands[cmd](msg, params)
+			commands[cmd](thread)
 		}
 	}
 
 	bot.on('text', function onMessage(msg) {
+		commands.msg = msg
 		if(msg.entities) {
 			msg.entities
 				.filter((entity) => entity.type === 'bot_command')

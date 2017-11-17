@@ -1,4 +1,5 @@
-const superagent = require('superagent');
+const superagent = require('superagent')
+const Thread = require('./thread')
 
 class Commands {
 	constructor(db, bot, booked_uri) {
@@ -7,76 +8,71 @@ class Commands {
 		this.booked_uri = booked_uri
 	}
 
-	start(msg, params) {
+	start(thread) {
 		const url = this.booked_uri + 'Authentication/Authenticate'
-		this.bot.sendChatAction(msg.chat.id, 'typing')
+		thread.sendTyping()
 		superagent.post(url)
-			.send({grant_type: 'authorization_code', code: params})
+			.send({grant_type: 'authorization_code', code: thread.params})
 			.end((err, res) => {
-				if(err) {
-					this.bot.sendMessage(msg.chat.id, 'Please tell me your charite.de email address to /signup for my booking services.')
+				if(err || !res.body.isAuthenticated) {
+					thread.sendMessage('Please tell me your charite.de email address to /signup for my booking services.')
 					return
 				}
 
-				this.mongodb.collection('connections').update(
-					{ chat_id: msg.from.id },
-					{ chat_id: msg.from.id, access_token: res.body.access_token },
-					{
-						upsert: true,
-					},
-				);
-				this.bot.sendMessage(msg.chat.id, 'Great! You have been successfully signed up to my booking services. Feel free to ask me about available rooms to /book.')
+				thread.saveAccessToken(res.body.access_token)
+				thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about available rooms to /book.')
 			})
 	}
 
-	signup(msg, params) {
+	signup(thread) {
 		const url = this.booked_uri + 'Telegram/signup'
-		this.bot.sendChatAction(msg.chat.id, 'typing')
+		thread.sendTyping()
 
 		superagent.post(url)
-			.send({user_email: params})
+			.send({user_email: thread.params})
 			.end((err, res) => {
-				if(err) this.bot.sendMessage(msg.chat.id, 'Please send me a valid charite.de email address with this command.')
-				else this.bot.sendMessage(msg.chat.id, 'Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
+				if(err) thread.sendMessage('Please send me a valid charite.de email address with this command.')
+				else thread.sendMessage('Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
 			})
 	}
 
-	bookings(msg, params) {
-		this.mongodb.collection('connections').findOne({ chat_id: msg.from.id }, (err, user) => {
-			if(!user) return notAuthorized(msg)
-			let userId = require('jwt-decode')(user.access_token).userId;
-			const url = this.booked_uri + 'Reservations/?userId=' + userId
-			this.bot.sendChatAction(msg.chat.id, 'typing')
+	bookings(thread) {
+		thread.getUser().then((user) => {
+			const url = this.booked_uri + 'Reservations/?userId=' + user.userId
+			thread.sendTyping()
 
 			superagent
 				.get(url)
 				.set('X-Authorization', `Bearer ${user.access_token}`)
 				.end((err, res) => {
-					if(err) notAuthorized(msg)
-					else this.bot.sendMessage(msg.chat.id, JSON.stringify(res.body.reservations))
+					if(err) return thread.notAuthorized()
+					res.body.reservations.map((reservation) => {
+						let msg = `*room*: ${reservation.resourceName}\n`
+						let date = new Date(Date.parse(reservation.startDate))
+						msg += '*date*: ' + date.toLocaleDateString()
+						thread.sendMessage(JSON.stringify(msg))
+					})
 				})
-		})
+		}, (err) => thread.notAuthorized())
 	}
 
-	me(msg, params) {
-		this.mongodb.collection('connections').findOne({ chat_id: msg.from.id }, (err, user) => {
-			if(!user) return notAuthorized(msg)
-			let userId = require('jwt-decode')(user.access_token).userId
-			const url = this.booked_uri + 'Users/' + userId
-			this.bot.sendChatAction(msg.chat.id, 'typing')
+	me(thread) {
+		thread.getUser().then((user) => {
+			const url = this.booked_uri + 'Users/' + user.userId
+			thread.sendTyping()
 
 			superagent
 				.get(url)
 				.set('X-Authorization', `Bearer ${user.access_token}`)
 				.end((err, res) => {
-					if(err) this.bot.sendMessage(msg.chat.id, 'Something went wrong.. ' + err)
-					else this.bot.sendMessage(msg.chat.id, JSON.stringify(res.body))
+					if(err) thread.sendMessage('Something went wrong.. ' + err)
+					else thread.sendMessage(JSON.stringify(res.body))
 				})
-		})
+		}, (err) => thread.notAuthorized())
 	}
 
-	notAuthorized(msg) {
-		this.bot.sendMessage(msg.chat.id, 'You have to be signed up to use my services. Please use /signup _your.email.address@charite.de_ to sign up with your email.', {parse_mode: 'Markdown'})
+	newThread(msg, params) {
+		return new Thread(msg, params, this.mongodb, this.bot)
 	}
 }
 
