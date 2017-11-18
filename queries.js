@@ -10,8 +10,11 @@ class Queries {
 	cancel(thread) {
 		thread.sendTyping()
 		thread.authorizedDelete(() => this.booked_uri + 'Reservations/' + thread.params)
-			.then(() => thread.sendMessage(`Booking is gone. Enjoy your free time!`),
-				(err) => thread.sendMessage(`That didn't work out..`))
+			.then(() => {
+					thread.sendMessage(`Booking is gone. Enjoy your free time!`)
+					thread.deleteMessage()
+				},
+				(err) => thread.notAuthorized())
 	}
 }
 

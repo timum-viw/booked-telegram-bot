@@ -36,8 +36,12 @@ class Thread {
 		);
 	}
 
-	notAuthorized(err) {
-		this.sendMessage('You have to be signed up to use my services. Please use /signup _your.email.address@charite.de_ to sign up with your email.' + err)
+	deleteMessage() {
+		this.bot.deleteMessage(this.msg.message.chat.id, this.msg.message.message_id)
+	}
+
+	notAuthorized() {
+		this.sendMessage('You have to be signed up to use my services. Please use /signup _your.email.address@charite.de_ to sign up with your email.')
 	}
 
 	authorizedGet(url) {

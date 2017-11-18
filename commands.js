@@ -40,7 +40,7 @@ class Commands {
 		thread.sendTyping()
 		thread.authorizedGet((user) => this.booked_uri + 'Reservations/?userId=' + user.userId)
 				.then((res) => {
-					if(res.body.reservations.length === 0) return thread.sendMessage('No bookings found. Do you want to see /available rooms?')
+					if(res.body.reservations.length === 0) return thread.sendMessage(`I didn't find any bookings. Do you want to see /available rooms?`)
 					res.body.reservations.map((reservation) => {
 						let startDate = new Date(Date.parse(reservation.startDate))
 						let endDate = new Date(Date.parse(reservation.endDate))
