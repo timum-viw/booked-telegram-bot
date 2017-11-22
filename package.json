@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^4.0.0",
+    "ioredis": "^3.2.1",
     "jwt-decode": "^2.2.0",
     "mongodb": "^2.2.33",
     "node-telegram-bot-api": "^0.29.0",

@@ -37,6 +37,12 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 			msg.entities
 				.filter((entity) => entity.type === 'bot_command')
 				.map((entity) => processCommand(msg, entity))
+		} else {
+			let thread = commands.newThread(msg, msg.text)
+			thread.redis.then((data) => {
+				if(data) thread.bookingParams = data.bookingParams
+				commands.available(thread)
+			}, (err) => console.log(err))
 		}
 	});
 

@@ -1,11 +1,15 @@
 const superagent = require('superagent')
 const Thread = require('./thread')
+const config = require('./config')
+const BookingParams = require('./booking-params')
+const crypto = require('crypto');
 
 class Commands {
 	constructor(db, bot, booked_uri) {
 		this.mongodb = db
 		this.bot = bot
 		this.booked_uri = booked_uri
+		this.redis = new require('ioredis')(config.redis)
 	}
 
 	start(thread) {
@@ -46,10 +50,11 @@ class Commands {
 						let endDate = new Date(Date.parse(reservation.endDate))
 						let msg = `*room:* ${reservation.resourceName}
 *date:* ${startDate.toDateString()}
-*time:* ${startDate.toLocaleTimeString()} - ${endDate.toTimeString()}`
-						thread.sendMessage(msg, {reply_markup: {
+*time:* ${startDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}`
+						let options = startDate > new Date() ? {reply_markup: {
 							inline_keyboard: [[{text: 'cancel', callback_data: `cancel.${reservation.referenceNumber}`}]]
-						}})
+						}} : {}
+						thread.sendMessage(msg, options)
 					})
 				}, (err) => thread.notAuthorized())
 	}
@@ -61,15 +66,79 @@ class Commands {
 			(err) => thread.notAuthorized())
 	}
 
+	getAvailabilities(resources, bookingParams) {
+		let availabilities = []
+		resources.map((resource) => {
+			let slot = resource.slots.filter((s) => s.isReservable && new Date(s.startDateTime) >= bookingParams.startDateTime).shift()
+			if(slot) {
+				slot.startDateTime = new Date(slot.startDateTime)
+				slot.endDateTime = new Date(slot.endDateTime)
+				slot.resourceName = resource.resourceName
+				slot.resourceId = resource.resourceId
+				availabilities.push(slot)
+			}
+		})
+
+		return availabilities
+	}
+
 	available(thread) {
 		thread.sendTyping()
-		thread.authorizedGet(() => this.booked_uri + 'Resources/Availability')
-				.then((res) => thread.sendMessage(JSON.stringify(res.body.resources)),
-				(err) => thread.notAuthorized())
+		let bookingParams = new BookingParams(thread.params, thread.bookingParams)
+		if(bookingParams.complete) {
+			if(bookingParams.startDateTime < new Date()) {
+				return thread.sendMessage(`That's in the past. Let it go...`)
+			}
+			thread.authorizedGet(() => this.booked_uri + 'Schedules/1/Slots?startDateTime=' + bookingParams.startDate.toISOString() + '&endDateTime=' + bookingParams.startDate.toISOString())
+				.then((res) => {
+					let bookingData = []
+
+					let availabilities = this.getAvailabilities(res.body.dates[0].resources, bookingParams)
+					if(availabilities.length < 1) {
+						thread.redis = {}
+						return thread.sendMessage(`Sorry, I don't have any available rooms ${bookingParams.startDate.toDateString()} at ${bookingParams.time}.`)
+					}
+
+					availabilities.map((availability) => {
+						let msg = `*room:* ${availability.resourceName}
+*date:* ${availability.startDateTime.toDateString()}
+*time:* ${availability.startDateTime.toLocaleTimeString()} - ${availability.endDateTime.toLocaleTimeString()}`
+
+						bookingData.push({
+							resourceId: availability.resourceId,
+							startDateTime: availability.startDateTime,
+							endDateTime: availability.endDateTime,
+							id: crypto.randomBytes(8).toString('hex'),
+							title: ''
+						})
+
+						thread.sendMessage(msg, {reply_markup: {
+							inline_keyboard: [[{text: 'book', callback_data: `book.${bookingData[bookingData.length - 1].id}`}]]
+						}})
+					})
+
+					thread.redis = {bookingData: bookingData}
+					return
+				},
+				(err) => thread.notAuthorized(err))
+		} else if (!bookingParams.date) {
+			thread.sendMessage(`For *when* do you want me to look for?`, {reply_markup: {
+				keyboard: [[{text: 'now'}, {text: 'today'}, {text: 'tomorrow'}]],
+				resize_keyboard: true,
+				one_time_keyboard: true
+			}})
+		} else if (!bookingParams.time) {
+			thread.sendMessage(`For what *time* do you want me to look for?`, {reply_markup: {
+				remove_keyboard: true
+			}})
+		} else {
+			thread.sendMessage(`Hm.. I think I got lost. Could you restart by asking me for /available rooms?`)
+		}
+		thread.redis = { bookingParams }
 	}
 
 	newThread(msg, params) {
-		return new Thread(msg, params, this.mongodb, this.bot)
+		return new Thread(msg, params, this.mongodb, this.bot, this.redis)
 	}
 }
 
