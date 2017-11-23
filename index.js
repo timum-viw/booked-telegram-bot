@@ -33,15 +33,18 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 	}
 
 	bot.on('text', (msg) => {
-		if(msg.entities) {
+		if(msg.entities && msg.entities.find((e) => e.type === 'bot_command')) {
 			msg.entities
 				.filter((entity) => entity.type === 'bot_command')
 				.map((entity) => processCommand(msg, entity))
 		} else {
 			let thread = commands.newThread(msg, msg.text)
 			thread.redis.then((data) => {
-				if(data) thread.bookingParams = data.bookingParams
-				commands.available(thread)
+				if(data && data.action) {
+					commands[data.action](thread, data)
+				} else {
+					commands.available(thread, data)
+				}
 			}, (err) => console.log(err))
 		}
 	});

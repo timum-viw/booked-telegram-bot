@@ -17,26 +17,29 @@ class Commands {
 		thread.sendTyping()
 		superagent.post(url)
 			.send({grant_type: 'authorization_code', code: thread.params})
-			.end((err, res) => {
-				if(err || !res.body.isAuthenticated) {
-					thread.sendMessage('Please tell me your charite.de email address to /signup for my booking services.')
-					return
-				}
-
+			.then((res) => {
 				thread.saveAccessToken(res.body.access_token)
-				thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about available rooms to /book.')
+				thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about /available rooms.')
+			}, (err) => {
+				thread.redis = {action: 'signup'}
+				thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.')
 			})
 	}
 
 	signup(thread) {
 		const url = this.booked_uri + 'Telegram/signup'
 		thread.sendTyping()
+		thread.redis = { action: 'signup' }
+
+		if(!thread.params) return thread.sendMessage(`Please send me your charite.de email address.`)
 
 		superagent.post(url)
 			.send({user_email: thread.params})
-			.end((err, res) => {
-				if(err) thread.sendMessage('Please send me a valid charite.de email address with this command.')
-				else thread.sendMessage('Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
+			.then((res) => {
+				thread.redis = null
+				thread.sendMessage('Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
+			}, (err) => {
+				thread.sendMessage('Please send me a valid charite.de email address.')
 			})
 	}
 
@@ -82,9 +85,9 @@ class Commands {
 		return availabilities
 	}
 
-	available(thread) {
+	available(thread, redisData = {}) {
 		thread.sendTyping()
-		let bookingParams = new BookingParams(thread.params, thread.bookingParams)
+		let bookingParams = new BookingParams(thread.params, redisData.bookingParams)
 		if(bookingParams.complete) {
 			if(bookingParams.startDateTime < new Date()) {
 				return thread.sendMessage(`That's in the past. Let it go...`)
@@ -134,7 +137,7 @@ class Commands {
 		} else {
 			thread.sendMessage(`Hm.. I think I got lost. Could you restart by asking me for /available rooms?`)
 		}
-		thread.redis = { bookingParams }
+		thread.redis = { action: 'available', bookingParams }
 	}
 
 	newThread(msg, params) {
