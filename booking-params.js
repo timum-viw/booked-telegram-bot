@@ -9,7 +9,7 @@ class BookingParams {
 	parse(str) {
 		if(/now/i.test(str)) {
 			this.date = new Date()
-			this.time = this.date.getHours().toString().padStart(2, '0')+this.date.getMinutes().toString().padStart(2, '0')
+			this.time = this.date.getHours().toString().padStart(2, '0')+(this.date.getMinutes()+2).toString().padStart(2, '0')
 		}
 		else if(/today/i.test(str)) this.date = new Date()
 		else if(/tomorrow/i.test(str)) this.date = new Date().setDate(new Date().getDate() + 1)
