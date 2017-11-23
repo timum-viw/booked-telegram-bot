@@ -19,6 +19,9 @@ class Queries {
 
 	book(thread) {
 		thread.redis.then((data) => {
+			if(!(data && data.bookingData)) {
+				return thread.sendMessage(`Please ask me about /available rooms first.`)
+			}
 			let bookingData = data.bookingData.find((b) => b.id === thread.params)
 			if(!bookingData) return thread.sendMessage(`That didn't work out...`)
 			thread.authorizedPost(() => this.booked_uri + 'Reservations/', bookingData).then((res) => {
