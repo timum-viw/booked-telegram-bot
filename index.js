@@ -41,9 +41,9 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 			let thread = commands.newThread(msg, msg.text)
 			thread.redis.then((data) => {
 				if(data && data.action) {
-					commands[data.action](thread, data)
+					commands[data.action](thread, data || {})
 				} else {
-					commands.available(thread, data)
+					commands.available(thread, data || {})
 				}
 			}, (err) => console.log(err))
 		}

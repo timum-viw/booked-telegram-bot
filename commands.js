@@ -72,17 +72,35 @@ class Commands {
 	getAvailabilities(resources, bookingParams) {
 		let availabilities = []
 		resources.map((resource) => {
-			let slot = resource.slots.filter((s) => s.isReservable && new Date(s.startDateTime) >= bookingParams.startDateTime).shift()
-			if(slot) {
-				slot.startDateTime = new Date(slot.startDateTime)
-				slot.endDateTime = new Date(slot.endDateTime)
-				slot.resourceName = resource.resourceName
-				slot.resourceId = resource.resourceId
-				availabilities.push(slot)
-			}
+			let slots = resource.slots.filter((s) => s.isReservable && new Date(s.startDateTime) >= bookingParams.startDateTime)
+			let availability = slots.reduce((availability, slot) => {
+				if(availability.startDateTime && new Date(slot.startDateTime).getTime() != availability.endDateTime.getTime()) {
+					availabilities.push({...availability})
+					delete availability.startDateTime
+				}
+				if(!availability.startDateTime) availability.startDateTime = new Date(slot.startDateTime)
+				availability.endDateTime = new Date(slot.endDateTime)
+				availability.resourceName = resource.resourceName
+				availability.resourceId = resource.resourceId
+				availability.id = crypto.randomBytes(8).toString('hex')
+				return availability
+			}, {})
+			if(availability.startDateTime) availabilities.push(availability)
 		})
 
 		return availabilities
+	}
+
+	sendAvailabilities(thread, availabilities) {
+		availabilities.map((availability) => {
+			let msg = `*room:* ${availability.resourceName}
+*date:* ${availability.startDateTime.toDateString()}
+*time:* ${availability.startDateTime.toLocaleTimeString()} - ${availability.endDateTime.toLocaleTimeString()}`
+
+			thread.sendMessage(msg, {reply_markup: {
+				inline_keyboard: [[{text: 'book', callback_data: `book.${availability.id}`}]]
+			}})
+		})
 	}
 
 	available(thread, redisData = {}) {
@@ -94,39 +112,31 @@ class Commands {
 			}
 			thread.authorizedGet(() => this.booked_uri + 'Schedules/1/Slots?startDateTime=' + bookingParams.startDate.toISOString() + '&endDateTime=' + bookingParams.startDate.toISOString())
 				.then((res) => {
-					let bookingData = []
-
 					let availabilities = this.getAvailabilities(res.body.dates[0].resources, bookingParams)
-					if(availabilities.length < 1) {
-						thread.redis = {}
-						return thread.sendMessage(`Sorry, I don't have any available rooms ${bookingParams.startDate.toDateString()} at ${bookingParams.time}.`)
+					if(availabilities.length - bookingParams.offset < 1) {
+						thread.sendMessage(`Sorry, I don't have ${bookingParams.offset ? 'more' : 'any'} available rooms ${bookingParams.startDate.toDateString()} at ${bookingParams.time}.`, {reply_markup: {
+							remove_keyboard: true
+						}})
+					} else {
+						let keyboard = { remove_keyboard: true }
+						if(availabilities.length > bookingParams.offset + 3) {
+							keyboard = {
+								keyboard: [['more results please']],
+								resize_keyboard: true,
+								one_time_keyboard: true
+							}
+						}
+						thread.sendMessage(`What do you think?`, {reply_markup: keyboard})
+						availabilities = availabilities.slice(bookingParams.offset,bookingParams.offset + 3)
+						this.sendAvailabilities(thread, availabilities)
 					}
 
-					availabilities.map((availability) => {
-						let msg = `*room:* ${availability.resourceName}
-*date:* ${availability.startDateTime.toDateString()}
-*time:* ${availability.startDateTime.toLocaleTimeString()} - ${availability.endDateTime.toLocaleTimeString()}`
-
-						bookingData.push({
-							resourceId: availability.resourceId,
-							startDateTime: availability.startDateTime,
-							endDateTime: availability.endDateTime,
-							id: crypto.randomBytes(8).toString('hex'),
-							title: ''
-						})
-
-						thread.sendMessage(msg, {reply_markup: {
-							inline_keyboard: [[{text: 'book', callback_data: `book.${bookingData[bookingData.length - 1].id}`}]]
-						}})
-					})
-
-					thread.redis = {bookingData: bookingData}
-					return
+					return thread.redis = {bookingParams, availabilities: availabilities.concat(redisData.availabilities || []) }
 				},
 				(err) => thread.notAuthorized(err))
 		} else if (!bookingParams.date) {
-			thread.sendMessage(`For *when* do you want me to look for?`, {reply_markup: {
-				keyboard: [[{text: 'now'}, {text: 'today'}, {text: 'tomorrow'}]],
+			thread.sendMessage(`For *when* do you want me to look for? E.g. _now_ or _friday 9:00_ or _9.10. 9:45_ etc..`, {reply_markup: {
+				keyboard: [['now', 'today', 'tomorrow']],
 				resize_keyboard: true,
 				one_time_keyboard: true
 			}})

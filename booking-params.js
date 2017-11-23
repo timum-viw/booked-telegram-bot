@@ -3,6 +3,7 @@ class BookingParams {
 		this.date = params.date
 		this.time = params.time
 		this.duration = params.duration
+		this.offset = params.offset || 0
 		this.parse(str)
 	}
 
@@ -30,6 +31,12 @@ class BookingParams {
 		if(time) {
 			this.time = time[1].padStart(2, '0')+time[2]
 			if(!this.date) this.date = new Date()
+		}
+
+		if(/more/i.test(str)) {
+			this.offset += 3
+		} else {
+			this.offset = 0
 		}
 	}
 
