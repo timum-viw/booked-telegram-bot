@@ -121,7 +121,7 @@ class Commands {
 						let keyboard = { remove_keyboard: true }
 						if(availabilities.length > bookingParams.offset + 3) {
 							keyboard = {
-								keyboard: [['more results please']],
+								keyboard: [['more results please'], ['cancel']],
 								resize_keyboard: true,
 								one_time_keyboard: true
 							}
@@ -136,7 +136,7 @@ class Commands {
 				(err) => thread.notAuthorized(err))
 		} else if (!bookingParams.date) {
 			thread.sendMessage(`For *when* do you want me to look for? E.g. _now_ or _friday 9:00_ or _9.10. 9:45_ etc..`, {reply_markup: {
-				keyboard: [['now', 'today', 'tomorrow']],
+				keyboard: [['now', 'today', 'tomorrow'],['cancel']],
 				resize_keyboard: true,
 				one_time_keyboard: true
 			}})

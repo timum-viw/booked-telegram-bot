@@ -33,7 +33,18 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 	}
 
 	bot.on('text', (msg) => {
-		if(msg.entities && msg.entities.find((e) => e.type === 'bot_command')) {
+		if(/thank/i.test(msg.text)) {
+			let thread = commands.newThread(msg, msg.text)
+			thread.sendMessage(`You're welcome.`)
+		}
+		else if(/cancel/i.test(msg.text)) {
+			let thread = commands.newThread(msg, msg.text)
+			thread.redis = null
+			thread.sendMessage(`Ok. What's next?`, {
+				reply_markup: {remove_keyboard: true}
+			})
+		}
+		else if(msg.entities && msg.entities.find((e) => e.type === 'bot_command')) {
 			msg.entities
 				.filter((entity) => entity.type === 'bot_command')
 				.map((entity) => processCommand(msg, entity))
