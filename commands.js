@@ -21,8 +21,12 @@ class Commands {
 				thread.saveAccessToken(res.body.access_token)
 				thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about /available rooms.')
 			}, (err) => {
-				thread.redis = {action: 'signup'}
-				thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.')
+				thread.authorizedGet((user) => this.booked_uri + 'Users/' + user.userId).then((res) => {
+					thread.sendMessage(`Everything set up. Feel free to ask me about /available rooms.`)
+				}, (err) => {
+					thread.redis = {action: 'signup'}
+					thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.')
+				})
 			})
 	}
 

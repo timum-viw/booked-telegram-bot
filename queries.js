@@ -11,7 +11,9 @@ class Queries {
 		thread.sendTyping()
 		thread.authorizedDelete(() => this.booked_uri + 'Reservations/' + thread.params)
 			.then(() => {
-					thread.sendMessage(`Booking is gone. Enjoy your free time!`)
+					thread.sendMessage(`Booking is gone. Enjoy your free time!`, {
+						reply_markup: {remove_keyboard: true}
+					})
 					thread.deleteMessage()
 				},
 				(err) => thread.notAuthorized())
