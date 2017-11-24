@@ -30,6 +30,15 @@ class Commands {
 			})
 	}
 
+	signout(thread) {
+		thread.sendTyping()
+		thread.authorizedPost(() => this.booked_uri + 'Authentication/SignOut')
+			.then((res) => {
+				thread.sendMessage(`Ok. I signed you out. You have to /signup before you can use my services again.`)
+				thread.removeUser()
+			}, (err) => thread.notAuthorized())
+	}
+
 	signup(thread) {
 		const url = this.booked_uri + 'Telegram/signup'
 		thread.sendTyping()

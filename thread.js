@@ -52,6 +52,10 @@ class Thread {
 		);
 	}
 
+	removeUser() {
+		this.mongodb.collection('connections').remove({ chat_id: this.msg.from.id });
+	}
+
 	deleteMessage() {
 		this.bot.deleteMessage(this.msg.message.chat.id, this.msg.message.message_id)
 	}
