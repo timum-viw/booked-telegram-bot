@@ -15,19 +15,25 @@ class Commands {
 	start(thread) {
 		const url = this.booked_uri + 'Authentication/Authenticate'
 		thread.sendTyping()
-		superagent.post(url)
-			.send({grant_type: 'authorization_code', code: thread.params})
-			.then((res) => {
-				thread.saveAccessToken(res.body.access_token)
-				thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about /available rooms.')
-			}, (err) => {
-				thread.authorizedGet((user) => this.booked_uri + 'Users/' + user.userId).then((res) => {
+		thread.getUser().catch(() => {
+			return thread.addUser()
+		}).then((user) => {
+			if(thread.params) {
+				return superagent.post(url)
+					.send({grant_type: 'authorization_code', code: thread.params})
+					.then((res) => {
+						thread.saveAccessToken(res.body.access_token)
+						thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about /available rooms.')
+					})
+			} else {
+				return thread.authorizedGet((user) => this.booked_uri + 'Users/' + user.userId).then((res) => {
 					thread.sendMessage(`Everything set up. Feel free to ask me about /available rooms.`)
-				}, (err) => {
-					thread.redis = {action: 'signup'}
-					thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.')
 				})
-			})
+			}
+		}).catch((err) => {
+			thread.redis = {action: 'signup'}
+			thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.' + err)
+		})
 	}
 
 	signout(thread) {

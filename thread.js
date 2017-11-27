@@ -24,9 +24,15 @@ class Thread {
 		return this.mongodb.collection('connections')
 			.findOne({ chat_id: this.msg.from.id })
 			.then((user) => {
-				user.userId = require('jwt-decode')(user.access_token).userId;
+				if(!user) throw 'user not found'
+				if(user.access_token) user.userId = require('jwt-decode')(user.access_token).userId;
 				return user;
 			})
+	}
+
+	addUser() {
+		return this.mongodb.collection('connections')
+			.insertOne({ chat_id: this.msg.from.id })
 	}
 
 	get redis() {
