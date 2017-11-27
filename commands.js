@@ -30,9 +30,9 @@ class Commands {
 					thread.sendMessage(`Everything set up. Feel free to ask me about /available rooms.`)
 				})
 			}
-		}).catch((err) => {
+		}).catch(() => {
 			thread.redis = {action: 'signup'}
-			thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.' + err)
+			thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.')
 		})
 	}
 
