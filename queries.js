@@ -1,5 +1,3 @@
-const superagent = require('superagent')
-
 class Queries {
 	constructor(db, bot, booked_uri) {
 		this.mongodb = db
@@ -30,7 +28,8 @@ class Queries {
 				thread.answerCallbackQuery()
 				return thread.sendMessage(`That didn't work out...`)
 			}
-			thread.authorizedPost(() => this.booked_uri + 'Reservations/', {...availability, title: ''}).then((res) => {
+			thread.authorizedPost(() => this.booked_uri + 'book', {...availability}).then((res) => {
+				thread.answerCallbackQuery('Done!')
 				thread.sendMessage('Alright, I booked the room for you. Enjoy your time!', {
 					reply_markup: {remove_keyboard: true}
 				})

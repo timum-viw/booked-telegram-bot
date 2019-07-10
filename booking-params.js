@@ -33,6 +33,9 @@ class BookingParams {
 			if(!this.date) this.date = new Date()
 		}
 
+		let duration = str.match(/(\d*([\.,]\d+)?)[ ]*h/)
+		if(duration) this.duration = duration[1]
+
 		if(/more/i.test(str)) {
 			this.offset += 3
 		} else {
@@ -41,7 +44,7 @@ class BookingParams {
 	}
 
 	get complete() {
-		return this.date && this.time
+		return this.date && this.time && this.duration
 	}
 
 	get startDateTime() {
@@ -54,6 +57,10 @@ class BookingParams {
 		let d = new Date(this.date)
 		d.setUTCHours(0, 0, 0, 0)
 		return d
+	}
+
+	get endDateTime() {
+		return new Date(this.startDateTime.valueOf() + this.duration * 60 * 60 * 1000)
 	}
 }
 

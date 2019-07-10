@@ -9,11 +9,11 @@ MongoClient.connect(config.mongo_uri, (err, db) => {
 
 	const options = {
 		webHook: {
-			port: process.env.PORT || config.port
+			port: config.port
 		}
 	}
 
-	const telegram_api_key = process.env.TELEGRAM_API_KEY
+	const telegram_api_key = config.telegram.apiKey
 	const bot = new TelegramBot(telegram_api_key, options)
 	bot.setWebHook(`${config.app_url}/bot${telegram_api_key}`);
 

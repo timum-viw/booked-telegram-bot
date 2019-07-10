@@ -25,7 +25,7 @@ class Thread {
 			.findOne({ chat_id: this.msg.from.id })
 			.then((user) => {
 				if(!user) throw 'user not found'
-				if(user.access_token) user.userId = require('jwt-decode')(user.access_token).userId;
+				if(user.access_token) user.email = require('jwt-decode')(user.access_token).email;
 				return user;
 			})
 	}
@@ -58,6 +58,25 @@ class Thread {
 		);
 	}
 
+	saveAuthCode(code, email) {
+		return this.mongodb.collection('connections').update(
+			{ chat_id: this.msg.from.id },
+			{ chat_id: this.msg.from.id, auth_code: { email, code, timestamp: new Date().valueOf() } },
+			{
+				upsert: true,
+			},
+		)
+	}
+
+	validateAuthCode(code) {
+		return this.getUser().then(user => {
+			if(user.auth_code && user.auth_code.code === code && user.auth_code.timestamp + 60 * 60 * 1000 > new Date().valueOf())
+				return Promise.resolve(user.auth_code.email)
+			else
+				return Promise.reject()
+		})
+	}
+
 	removeUser() {
 		this.mongodb.collection('connections').remove({ chat_id: this.msg.from.id });
 	}
@@ -83,7 +102,7 @@ class Thread {
 		return this.getUser().then((user) => {
 			return superagent
 				.get(url(user))
-				.set('X-Authorization', `Bearer ${user.access_token}`)
+				.set('Authorization', `Bearer ${user.access_token}`)
 		})
 	}
 
@@ -92,7 +111,7 @@ class Thread {
 			return superagent
 				.post(url(user))
 				.send(data)
-				.set('X-Authorization', `Bearer ${user.access_token}`)
+				.set('Authorization', `Bearer ${user.access_token}`)
 		})
 	}
 
@@ -100,7 +119,7 @@ class Thread {
 		return this.getUser().then((user) => {
 			return superagent
 				.delete(url(user))
-				.set('X-Authorization', `Bearer ${user.access_token}`)
+				.set('Authorization', `Bearer ${user.access_token}`)
 		})
 	}
 }
