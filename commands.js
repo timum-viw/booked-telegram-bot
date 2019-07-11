@@ -97,6 +97,7 @@ class Commands {
 		availability.startDateTime = new Date(start)
 		availability.endDateTime = new Date(end)
 		availability.resource = entry.resource.address
+		availability.resourceName = entry.resource.name
 		availability.id = crypto.randomBytes(8).toString('hex')
 		return availability
 	}
