@@ -1,7 +1,7 @@
 const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 var rootCas = require('ssl-root-cas').create()
-rootCas.addFile(__dirname + '/dfn2.crt').addFile(__dirname + '/dfn1.crt')
+rootCas.addFile(__dirname + '/dfn2.cer').addFile(__dirname + '/dfn1.cer')
 require('https').globalAgent.options.ca = rootCas
 const config = require('./config')
 
