@@ -2,7 +2,7 @@ const Thread = require('./thread')
 const config = require('./config')
 const BookingParams = require('./booking-params')
 const crypto = require('crypto')
-const jwt = require('jwt-simple')
+const superagent = require('superagent')
 
 class Commands {
 	constructor(db, bot, booked_uri) {
@@ -19,9 +19,9 @@ class Commands {
 			if(user.access_token) {
 				thread.sendMessage(`Everything set up. Feel free to ask me about /available rooms.`)
 			} else if(thread.params) {
-				thread.validateAuthCode(thread.params)
-					.then( email => {
-						thread.saveAccessToken(jwt.encode({ email, aud: config.jwt.audience }, config.jwt.secret))
+				superagent.post(this.booked_uri + 'token').send({ code: thread.params })
+					.then(res => {
+						thread.saveAccessToken(res.body.access_token)
 						thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about /available rooms.')
 					})
 					.catch( () => {
@@ -29,7 +29,7 @@ class Commands {
 					})
 			} else {
 				thread.redis = {action: 'signup'}
-				thread.sendMessage('Please tell me your charite.de email address to signup for my booking services.')
+				thread.sendMessage('Please go to https://lernziele.charite.de/llpMobil/#!/main/rooms to signup for my booking services.')
 			}
 		})
 	}
@@ -44,16 +44,17 @@ class Commands {
 	signup(thread) {
 		thread.sendTyping()
 		thread.redis = { action: 'signup' }
+		thread.sendMessage('Please go to https://lernziele.charite.de/llpMobil/#!/main/rooms to signup for my booking services.')
 
-		if(!thread.params) return thread.sendMessage(`Please send me your charite.de email address.`)
-
-		thread.saveAuthCode(crypto.randomBytes(8).toString('hex'), thread.params)
-			.then((res) => {
-				thread.redis = null
-				thread.sendMessage('Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
-			}, (err) => {
-				thread.sendMessage('Please send me a valid charite.de email address.')
-			})
+		//if(!thread.params) return thread.sendMessage(`Please send me your charite.de email address.`)
+		
+		// thread.authorizedPost(this.booked_uri + 'telegram', { email: thread.params })
+		// 	.then((res) => {
+		// 		thread.redis = null
+		// 		thread.sendMessage('Ok. I have sent you an email with further instruction on how to validate your account. Please check your email inbox.')
+		// 	}, (err) => {
+		// 		thread.sendMessage('Please send me a valid charite.de email address.')
+		// 	})
 	}
 
 	bookings(thread) {

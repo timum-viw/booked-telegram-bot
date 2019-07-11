@@ -9,10 +9,6 @@ const config = {
 	telegram: {
 		apiKey: process.env.TELEGRAM_API_KEY,
 	},
-	jwt: {
-		audience: process.env.JWT_AUDIENCE || 'http://localhost:4321/',
-		secret: process.env.JWT_SECRET
-	}
 }
 
 module.exports = config;

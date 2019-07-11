@@ -16,11 +16,8 @@
     "dotenv": "^4.0.0",
     "ioredis": "^3.2.1",
     "jwt-decode": "^2.2.0",
-    "jwt-simple": "^0.5.6",
     "mongodb": "^2.2.33",
     "node-telegram-bot-api": "^0.29.0",
-    "sendgrid": "^5.2.3",
-    "ssl-root-cas": "^1.3.1",
     "superagent": "^3.8.1"
   },
   "devDependencies": {

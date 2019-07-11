@@ -58,25 +58,6 @@ class Thread {
 		);
 	}
 
-	saveAuthCode(code, email) {
-		return this.mongodb.collection('connections').update(
-			{ chat_id: this.msg.from.id },
-			{ chat_id: this.msg.from.id, auth_code: { email, code, timestamp: new Date().valueOf() } },
-			{
-				upsert: true,
-			},
-		)
-	}
-
-	validateAuthCode(code) {
-		return this.getUser().then(user => {
-			if(user.auth_code && user.auth_code.code === code && user.auth_code.timestamp + 60 * 60 * 1000 > new Date().valueOf())
-				return Promise.resolve(user.auth_code.email)
-			else
-				return Promise.reject()
-		})
-	}
-
 	removeUser() {
 		this.mongodb.collection('connections').remove({ chat_id: this.msg.from.id });
 	}
