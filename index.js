@@ -1,6 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
-require('ssl-root-cas/latest').inject().addFile(__dirname + '/dfn2.crt').addFile(__dirname + '/dfn1.crt')
+var rootCas = require('ssl-root-cas').create()
+rootCas.addFile(__dirname + '/dfn2.crt').addFile(__dirname + '/dfn1.crt')
+require('https').globalAgent.options.ca = rootCas
 const config = require('./config')
 
 var MongoClient = require('mongodb').MongoClient
