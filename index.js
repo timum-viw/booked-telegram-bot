@@ -1,5 +1,6 @@
 const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
+require('ssl-root-cas/latest').inject()
 const config = require('./config')
 
 var MongoClient = require('mongodb').MongoClient
