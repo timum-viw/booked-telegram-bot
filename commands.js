@@ -19,7 +19,7 @@ class Commands {
 			if(user.access_token) {
 				thread.sendMessage(`Everything set up. Feel free to ask me about /available rooms.`)
 			} else if(thread.params) {
-				superagent.post(this.booked_uri + 'token').send({ code: thread.params })
+				superagent.get(`${this.booked_uri}token&code=${thread.params}`)
 					.then(res => {
 						thread.saveAccessToken(res.body.access_token)
 						thread.sendMessage('Great! You have been successfully signed up to my booking services. Feel free to ask me about /available rooms.')
