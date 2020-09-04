@@ -17,7 +17,7 @@
     "dotenv": "^4.0.0",
     "ioredis": "^3.2.1",
     "jwt-decode": "^2.2.0",
-    "mongodb": "^2.2.33",
+    "mongodb": "^3.1.13",
     "node-telegram-bot-api": "^0.29.0",
     "superagent": "^3.8.1"
   },
